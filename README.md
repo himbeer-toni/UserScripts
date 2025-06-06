@@ -1,7 +1,29 @@
 # UserScripts
 Scripts for Linux user's ~/bin/ directory
 
-#crnupdate
+# crnupdate
+A PERL script to update or insert copyright/licensing
+information into a source file.
+
+Such a file could contain this text
+```
+Author: Himbeertoni
+Email: Toni.Himbeer@fn.de
+Github: https://www.github.com/himbeer-toni
+
+This script is available for
+public use under GPL V3 (see
+https://www.gnu.org/licenses/gpl-3.0.en.html )
+```
+The default filename is copyright.txt but you can 
+specify another using -c.
+
+You can then use crnupdate for any source-code that supports the hash-sign as comment delimiter.
+
+So have a look at the script itself where it did 
+inject itself the notice.
+
+Output of `crnupdate -h`:
 ```
 Usage: crnupdate [option [param]..] inputfile [outputfile]
  The inputfile is mandatory
