@@ -20,7 +20,8 @@ specify another using -c.
 
 You can then use crnupdate for any source-code that supports the hash-sign as comment delimiter.
 
-So have a look at the script itself where it did 
+So have a look at the top of script itself 
+where it did 
 inject itself the notice using the command
 `crnupdate -m "############## License / Copyright ###############" -r crnupdate`.
 ```
