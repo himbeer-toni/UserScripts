@@ -21,8 +21,30 @@ specify another using -c.
 You can then use crnupdate for any source-code that supports the hash-sign as comment delimiter.
 
 So have a look at the script itself where it did 
-inject itself the notice.
+inject itself the notice using the command
+`crnupdate -m "############## License / Copyright ###############" -r crnupdate`.
+```
+#!/usr/bin/perl
 
+############## License / Copyright ###############
+# Author: Himbeertoni
+# Email: Toni.Himbeer@fn.de
+# Github: https://www.github.com/himbeer-toni
+# 
+# This script is available for
+# public use under GPL V3 (see
+# https://www.gnu.org/licenses/gpl-3.0.en.html )
+############## License / Copyright ###############
+
+# Abstract:
+# Insert or update a notice about author and license
+# (from copyright.txt) into a script. Will always 
+# replace the notice with the notice-file contents.
+# Work for programmung ane scripting languages where
+# comments are introduced by a hash-sign (#).
+
+# Modules used
+```
 Output of `crnupdate -h`:
 ```
 Usage: crnupdate [option [param]..] inputfile [outputfile]
