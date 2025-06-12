@@ -1,1 +1,223 @@
-../../us/crnupdate
+#!/usr/bin/perl
+
+############## License / Copyright ###############
+# Author: Himbeertoni
+# Email: Toni.Himbeer@fn.de
+# Github: https://www.github.com/himbeer-toni
+# 
+# This script is available for
+# public use under GPL V3 (see
+# https://www.gnu.org/licenses/gpl-3.0.en.html )
+# 
+# ©2025 Himbeertoni
+# 
+############## License / Copyright ###############
+
+# Abstract:
+# Insert or update a notice about author and license
+# (from copyright.txt) into a script. Will always 
+# replace the notice with the notice-file contents.
+# Work for programmung ane scripting languages where
+# comments are introduced by a hash-sign (#).
+
+# Modules used
+use Getopt::Std;
+use File::Temp;
+use File::Basename;
+use File::Copy;
+
+# Which character introduces a comment, which
+my $comment = '#';
+# characters mark start and end of copyright notice
+# and will be writen to mark the notice
+my $commentmark = '##';
+# which characters will be used to search for
+# the cooyright notice marker. Taken from the above
+# but the above could be changed with -m
+my $searchmark = $commentmark;
+# while reading the input file: how many lines
+# started with searchmark
+my $seen=0;
+
+# Display help for the command
+sub usage () {
+	my $bn = basename($0);
+	print <<~"EOI";
+	Usage: $bn [option [param]..] inputfile [outputfile]
+	 The inputfile is mandatory
+	 The outputfile is mandatory
+	 The outputfile must not be given when one of
+	  the options -b or -c are present
+	 Options:
+	  -b backup-file-suffix
+	     edit input file in place, but keep a backup
+	     file, the suffix will be appended to the
+			 name of the inputfile
+	     e.g. -b .bck for file i.txt will get you
+	     i.txt.bck as backup. (do this twice and the
+	     original content will be gone!)
+	  -c copyright-filename
+	     specify the name of the file containing the
+	     copyright infos. If not given copyright.txt
+	     is used.
+	  -h this text is displayed
+	  -m copyright-marker-string
+	     give a new marker line for enclosing the
+	     copyright info. MUST start with ##
+	     otherwise ## will be prepended.
+	  -r replace the inputfile with the result
+	  -s stay silent if copyright notice is already
+	     up to date and no files where touched therefor
+	EOI
+}
+
+sub prerr {
+	print STDERR @_;
+}
+
+sub prerrf {
+	printf STDERR @_;
+}
+
+# Parse options, display help on failure
+if ( ! getopts('b:c:hm:rs') ) {
+	usage;
+	exit 1;
+}
+
+# Display help and exit if -h
+if ( $opt_h ) {
+	my $bn = basename($0);
+	usage;
+	exit(0);
+}
+
+# new - alternative - comment marker from -m
+if ( $opt_m ) {
+	# Insure, that it starts which ##
+	if ( $opt_m =~ /^$commentmark/ ) {
+		$commentmark=$opt_m;
+	} else {
+		$commentmark="## $opt_m";
+	}
+}
+
+# For the copyright texts
+my ($crn, $oldcrn);
+
+# Alternative copyright file with -c ?
+if ( $opt_c ) {
+	$crnf = $opt_c;
+} else {
+	$crnf = "copyright.txt";
+}
+
+# If -r or -b set the output file (arg #2) to
+# a temporary file
+if ( $opt_r || $opt_b ) {
+	my $fh = File::Temp->new(TEMPLATE => "$ARGV[0]-XXXXXX");
+	$ARGV[1] = sprintf("%s.tmp",$fh->filename);
+	undef $fh;
+}
+
+# Check command params. Must be one arg with -b/-r
+# and two args without -b/-r. If not, complain.
+if ( ( ( $#ARGV < 0 ) || ( $#ARGV > 1  ) ) ||
+   ( ( $#ARGV == 0 ) && ( !$opt_r && !$opt_b ) ) ) {
+	prerr "Wrong (number of) arguments\n";
+	usage;
+	exit(1);
+}
+
+# read the copyright notice into a variable prepending
+# the comment mark (+ 1 space) to each line
+open(CRN, '<', $crnf) or die "error opening $crnf: $!";
+while (<CRN>) {
+	$crn = sprintf("%s%s %s", $crn, $comment, $_);
+}
+close(CRN);
+
+# Open source and destination (input and output) files
+# while copying permissions from input to output
+open(SRC, "<", $ARGV[0]) or die "error opening input $ARGV[0]";
+my ($dev, $ino, $mode, @rest) = stat($ARGV[0]);
+open(DST, ">", $ARGV[1]) or die "error opening output $ARGV[1]";
+chmod $mode, $ARGV[1] or prerr "warning: chmod for $ARGV[1] did not succeed";
+# Read input until copyright notice while writing
+# the lines to the output
+while (<SRC>) {
+	# If the marker (for copyright) is seen read it
+	# and use it for writing the notice (unless a new
+	# marker was specified by -m
+	if ( $seen == 2 ) {
+		$seen++;  # this is actually a lie, we didn't see it
+							# the third time, but ensure we only do this
+							# once
+		if ( $oldcrn eq $crn ) {
+			unlink $ARGV[1] or prerr "warning; failed to delete temporary file $ARGV[1]\n";
+			if ( ! $opt_s ) {
+				prerr "File $ARGV[0] already up to date - no files touched\n";
+			}
+			exit;
+		}
+	}
+	if ( /^$searchmark/ ) {
+		if ( $seen == 1 ) {
+			if ( ! $opt_m ) {
+				chomp($commentmark = $_);
+			}
+			print DST "$commentmark\n$crn$commentmark\n";
+		}
+		$seen++;
+	} else {
+		# If we are not just reading (away) the old
+		# copyright notice, copy input to output
+		if ( $seen != 1 ) {
+			print DST;
+		} else {
+			$oldcrn = sprintf("%s%s",$oldcrn,$_);
+		}
+	}
+}
+
+# Now here comes the special case:
+# we have read (and written) the entire input file
+# without hitting the marker: so the input did not
+# contain a copyright notice. 
+# So we have to re-read and re-write to INSERT the
+# copyright notice just after line 1 (to leave
+# any possibly existing she-bang intact).
+if ( $seen == 0 ) {
+	# Re-open source as we did not find a line where
+	# to insert copyright information, so we put it
+	# on top (after a possible she-bang)
+	close SRC;
+	open(SRC, "<$ARGV[0]") or die "error opening input $src";
+	$_=<SRC>;
+	# Truncate output file, we're starting over this
+	# time inserting copyright at line 2
+	close DST;
+	open(DST, ">", $ARGV[1]) or die "error opening output $ARGV[1]";
+	# Write first line that was read, followed by
+	print DST;
+	# copyright notice
+	print DST "$commentmark\n$crn$commentmark\n";
+	# and append the rest
+	while (<SRC>) {
+		print DST;
+	}
+}
+close(SRC);
+close(DST);
+# If we have written to a temporary output file
+# we have now to act on the users request
+if ( $opt_b ) { # -b
+	# The input file becomes the backup file
+	# while the output file replaces the input file
+	copy($ARGV[0],$ARGV[0].$opt_b)|| die ( "Error in copying $ARGV[1] to $ARGV[0]: $!" );
+	rename($ARGV[1],$ARGV[0])|| die ( "Error in renaming $ARGV[1] to $ARGV[0]: $!" );
+} elsif ( $opt_r ) { # -r
+	# the output file replaces the inputfile
+	rename($ARGV[1],$ARGV[0])|| die ( "Error in renaming $ARGV[1] to $ARGV[0]: $!" );
+}
+exit(0);

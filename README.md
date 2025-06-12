@@ -1,7 +1,7 @@
 # UserScripts
 Scripts for Linux user's ~/bin/ directory
 
-# crnupdate
+## crnupdate
 A PERL script to update or insert copyright/licensing
 information into a source file.
 
@@ -74,3 +74,16 @@ Usage: crnupdate [option [param]..] inputfile [outputfile]
   -s stay silent if copyright notice is already
      up to date and no files where touched therefor
 ```
+## s24open
+
+Very personal helper
+  to open a file remotely on smartphone and
+  copy it back when written remotely
+  e. g. to use Markor-app to edit markdown.
+  Mainly useful when you ssh-ed from your
+  phone to your system.
+### pre-reqirements
+  - Termux installed on smartphone
+  - passwordless (using ssh-keys) ssh-access to termux on smartphone
+  - inotifywait installed in termux
+

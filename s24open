@@ -1,0 +1,48 @@
+#!/bin/bash
+##
+# Author: Himbeertoni
+# Email: Toni.Himbeer@fn.de
+# Github: https://www.github.com/himbeer-toni
+# 
+# This script is available for
+# public use under GPL V3 (see
+# https://www.gnu.org/licenses/gpl-3.0.en.html )
+# 
+# ©2025 Himbeertoni
+# 
+##
+# Ver personal helper
+#  to open a file remtely on smartphone and
+#  copy it back when written remotely
+#  e. g. to use Markor-app to edit markdown
+#  mmainly useful when you ssh-ed from your
+#  phone to your system.
+# pre-reqirements:
+#  - Termux installed on smartphone
+#  - passwordless (using ssh-keys) ssh-access to termux
+#    on smartphone
+#  - inotifywait installed in termux
+
+# your phone's hostname, directory
+phone=s24
+phonedir=st/download
+
+# File to work on is arg #1, get extension
+# (will be needed for tmpfil, otherwise termux
+# has no (or at least - no good) idea which App
+# is appropriate for "termux-open"
+src=$1
+ext=".${src/*./}"
+tmpfil=$(mktemp -u "tmp-XXXXXXXX.${ext}")
+
+# copy it over ..
+scp "$src" ${phone}:"${phonedir}/${tmpfil}"
+# .. open it there ..
+ssh ${phone} "termux-open \"${phonedir}/${tmpfil}\""
+# .. wait until it is written ..
+ssh ${phone} "inotifywait -qe CLOSE_WRITE \"${phonedir}/${tmpfil}\""
+# .. copy it back ..
+scp ${phone}:"${phonedir}/${tmpfil}" "${src}"
+# .. and remove tmpfil
+ssh ${phone} "rm -f \"${phonedir}/${tmpfil}\""
+exit
