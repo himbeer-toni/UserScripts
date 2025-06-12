@@ -1,5 +1,5 @@
 SHELL = /bin/bash
-TARGETS = s24open crnupdate
+TARGETS = smop crnupdate
 UTARGETS = 
 
 BINDIR	= ~/bin
