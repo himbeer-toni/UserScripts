@@ -74,7 +74,7 @@ Usage: crnupdate [option [param]..] inputfile [outputfile]
   -s stay silent if copyright notice is already
      up to date and no files where touched therefor
 ```
-## smop (SMartphoneOPen)
+## smop (**sm**artphone**op**en)
 
 Very personal helper
   to open a file remotely on smartphone and
