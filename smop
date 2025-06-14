@@ -1,4 +1,5 @@
 #!/bin/bash
+
 ##
 # Author: Himbeertoni
 # Email: Toni.Himbeer@fn.de
@@ -36,13 +37,18 @@ ext=".${src/*./}"
 tmpfil=$(mktemp -u "tmp-XXXXXXXX.${ext}")
 
 # copy it over ..
-scp "$src" ${phone}:"${phonedir}/${tmpfil}"
+scp -q "$src" ${phone}:"${phonedir}/${tmpfil}"
 # .. open it there ..
 ssh ${phone} "termux-open \"${phonedir}/${tmpfil}\""
 # .. wait until it is written ..
-ssh ${phone} "inotifywait -qe CLOSE_WRITE \"${phonedir}/${tmpfil}\""
+ssh ${phone} "inotifywait -qqe CLOSE_WRITE \"${phonedir}/${tmpfil}\""
 # .. copy it back ..
-scp ${phone}:"${phonedir}/${tmpfil}" "${src}"
+scp -q ${phone}:"${phonedir}/${tmpfil}" "${tmpfil}"
 # .. and remove tmpfil
 ssh ${phone} "rm -f \"${phonedir}/${tmpfil}\""
+# if file-from-remote differs from src, replace src
+# while preserving mode
+prvmod=$(stat -c %a "${src}")
+diff -q "$tmpfil" "$src" > /dev/null
+[ $? != 0 ] && mv "${tmpfil}" "${src}" && chmod $prvmod "$src"
 exit
