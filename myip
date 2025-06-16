@@ -1,0 +1,109 @@
+#!/bin/bash
+##
+# Author: Himbeertoni
+# Email: Toni.Himbeer@fn.de
+# Github: https://www.github.com/himbeer-toni
+# 
+# This script is available for
+# public use under GPL V3 (see
+# https://www.gnu.org/licenses/gpl-3.0.en.html )
+# 
+# ©2025 Himbeertoni
+# 
+##
+
+# This is: myip, myip4, myip6
+# A script to determine and print the first global
+# IP address (IPv4 or Ipv6) of the computer
+
+# the script is named myip, the (otherwise)
+# undocumented option --makelinks creates two
+# symlinks to itself: myip4 and myip6
+# You can now 
+#  either call myip -4
+#  or     call myip -6
+#  or     call myip4
+#  or     call myip6
+# to get the IP (v4 or v6) address of your computer
+# (because not explicitly handled you might even
+#  call myip4 -4, myip4 -6, myip6 -4, myip6 -6
+#  where the option takes precedence over the name)
+#
+# --makelinks will use/request sudo permission, if
+# the user has no write-permission for the directory
+# where myip resides (no sudo, no links).
+
+# My name
+bn=$(basename $0)
+
+# Function to parse IP address output, returns
+# first found global IP
+myip () {
+  # Looking for ..
+	case $1 in
+		6) # .. IPv6
+			patt='inet6 [^f][^d]'
+			;;
+		4|*) # .. IPv4
+	 		patt='inet '
+			;;
+		*)
+	esac
+	# List my IPs, find global scope, return first
+	# in list
+	# for IPv6 return the first address not being a
+	# ULA (unique local address, they start with fd)
+	ip address|awk "/${patt}.* scope global/{print substr(\$2,1,index(\$2,\"/\")-1);exit}"
+}
+
+# if invoked by symlink, preset ipver by symlink name
+case ${bn} in
+	myip4)
+		ipver=4
+		;;
+	myip6)
+		ipver=6
+		;;
+esac
+
+# parse options (if present overrides above)
+while [ "${1:0:1}" = "-" ]
+do
+	case $1 in
+		--makelinks)
+			if [ ! -w $(dirname $0) ] && [ $UID != 0 ];then
+				echo need to be root - using sudo
+				exec sudo $0 --makelinks
+				# exec never returns
+			else
+				cd $(dirname $0)
+				for link in myip4 myip6
+					do
+						echo ln -sf $bn $link
+						ln -sf $bn $link
+					done
+			fi
+			exit
+			;;
+		-4)
+			ipver=4
+			;;
+		-6)
+			ipver=6
+			;;
+		*)
+			echo >&2 "invalid option $1: specify -4 or -6"
+			exit 1
+			;;
+		esac
+	shift
+done
+		
+if [ ! $ipver ] && [ $# = 0 ]; then
+	# still no idea what version - tell it
+	echo >&2 "specify -4 or -6"
+	exit 1
+else
+	# go for it
+	myip $ipver
+fi

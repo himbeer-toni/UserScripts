@@ -1,0 +1,70 @@
+#!/bin/bash
+
+# YOUR PROVIDER'S DYNDNS SERVER NAME HERE
+DDNS_SERVER=dyndns.strato.com
+
+# Enter DynDNS name for FritzBOX
+#  * to obtain a new certificate with getssl 
+#	   it must point to server2's IPv6
+#  * for normmal remote reachabilty the name
+#    must point to the FritzBOX's IPv6
+#  as you must specify IPv4 as well fori
+#  Strato's DDNS service we do this as well
+#
+# This script depends on extip, extip6 and
+# ifip6 which return the addresses of server
+# and FritzBOX
+
+##
+# Author: Himbeertoni
+# Email: Toni.Himbeer@fn.de
+# Github: https://www.github.com/himbeer-toni
+# 
+# This script is available for
+# public use under GPL V3 (see
+# https://www.gnu.org/licenses/gpl-3.0.en.html )
+# 
+# ©2025 Himbeertoni
+# 
+##
+
+# get what to send from commandline
+case $1 in
+	-to-server|-s|s)
+		ipv6=$(myip -6)
+		;;
+	-to-fritzbox|-f|f)
+		ipv6=$(fritzip -6)
+		;;
+	"")
+		echo "usage: $0 -to-server|-to-fritzbox" >&2
+		exit 1
+
+		;;
+esac
+
+# Check for credentials file
+crf=~/.config/ddcreds
+if [ ! -r ${crf} ]; then
+	cat >&2 <<-EOI
+		create a credentials file (${crf})
+		containing two lines, e. g.
+		------ snip ------
+		login=yourname
+		password=yourpassword
+		------ snip ------
+		of the account needed for DynDNS updates
+	EOI
+	exit 1
+fi
+
+# Define top-level domain, sub domain and
+# something else for URL
+trg="fbx.kardel.eu"
+. ~/.config/ddcreds # must define login and password
+
+# build URL
+url="${login}:${password}@${DDNS_SERVER}/nic/update?hostname=${trg}&myip=$(extip),${ipv6}"
+# and go
+curl -s ${url}
+exit

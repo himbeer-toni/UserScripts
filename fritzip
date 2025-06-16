@@ -1,0 +1,139 @@
+#!/bin/bash
+
+# Determine FRITZ!Box external IP (v4 or v6)9
+
+# Your FRITZ!Box address (or name)
+# e.g. 192.168.178.1 (or fritz.box)
+######      but not below this      ######
+# Author: Himbeertoni
+# Email: Toni.Himbeer@fn.de
+# Github: https://www.github.com/himbeer-toni
+# 
+# This script is available for
+# public use under GPL V3 (see
+# https://www.gnu.org/licenses/gpl-3.0.en.html )
+# 
+# ©2025 Himbeertoni
+# 
+######      but not below this      ######
+
+# My own basename - how this script is called
+bn=$(basename $0)
+
+# function to get external IP of FRITZ!Box
+fritzip () {
+	# print external IP
+	#  args:
+	#   #1 name or IP of FRITZ!Box
+	#   #2 undefined = IPv4 is returned
+	#   #2 defined as 6 = IPv6 is returned
+
+	local fritzbox=$1
+	shift
+	# for the request
+	# just ignore 4 as it is the default anyway
+	if [ "$1" = 4 ]; then
+		shift
+	fi
+	if [ "$1" = 6 ]; then
+		# for IPv4
+		item="X_AVM_DE_GetExternalIPv6Address"
+		shift
+	else
+		# for IPv4
+		item="GetExternalIPAddress"
+	fi
+	# to keep the request below human readable, we
+	# define some URLs and the UPNP service URN
+	# to use these vars in the request
+	local encurl="http://schemas.xmlsoap.org/soap/encoding/"
+	local xmlnsurl="http://schemas.xmlsoap.org/soap/envelope/"
+	local svcurn="urn:schemas-upnp-org:service" 
+	# put the SOAP request into $soaprequest
+	read -r -d '' soaprequest <<-EOI
+	<?xml version="1.0" encoding="utf-8" ?>
+	<s:Envelope 
+	 s:encodingStyle="$encurl" 
+	 xmlns:s="$xmlnsurl">
+	  <s:Body>
+	    <u:GetExternalIPAddress 
+			 xmlns:u="$svcurn:WANIPConnection:1" 
+			 />
+	  </s:Body>
+	</s:Envelope>
+		EOI
+	
+		extip=$(curl -s $1 \
+			"http://${fritzbox}:49000/igdupnp/control/WANIPConn1" \
+			-H "Content-Type: text/xml; charset="utf-8"" \
+			-H "SoapAction:urn:schemas-upnp-org:service:WANIPConnection:1#${item}" \
+			-d "$soaprequest"| \
+			# response parsing per sed:
+			# delete lines 1-4,6 leaves us with line 5 that
+			# contains the IP in the XML-element
+			# <NewIPAddress> or <NewIPv6Address>
+			sed -E '1,4d;6,$d;s/.*Address>(.*)<\/.*/\1/')
+		 # If success then echo IP
+		 if ( [ $? = 0 ] && [ "$extip" != "" ] ); then
+			echo $extip
+		 else
+		  local sts=$?
+			echo >&2 "failed to get IP of $1"
+			exit $sts
+	fi	
+	exit
+}
+
+# determine requested IP (4 or 6) by basename
+case $bn in
+	extip|extip4)
+		ipver=4
+		;;
+	extip6)
+		ipver=6
+		;;
+	fritzip)
+		ipver=4
+		if [ "${1:0:1}" != "-" ]; then
+			echo >&2 "specify -4 or -6 to get IPv4 or IPv6"
+			exit 3
+		fi
+		;;
+esac
+# parse options (if present overrides above)
+while [ "${1:0:1}" = "-" ]
+do
+	case $1 in
+		--makelinks)
+			if [ ! -w $(dirname $0) ] && [ $UID != 0 ];then
+				echo need to be root - using sudo
+				exec sudo $0 --makelinks
+				# exec never returns
+			else
+				cd $(dirname $0)
+				for link in extip extip6 extip4
+					do
+						echo ln -sf $bn $link
+						ln -sf $bn $link
+					done
+			fi
+			exit
+			;;
+		-4)
+			ipver=4
+			;;
+		-6)
+			ipver=6
+			;;
+		*)
+			echo >&2 "invalid option $1: use -4 or -6"
+			exit 1
+			;;
+		esac
+	shift
+done
+if [ $# != 0 ]; then
+	echo >&2 "invalid arg(s) $@: use -4 or -6"
+	exit 1
+fi
+fritzip $fritzbox $ipver
