@@ -1,5 +1,5 @@
 # Document
-German description how to obtain a Let1s Encrypt
+German description how to obtain a Let's Encrypt
 certificate: 
 [LetEncFbIP6.md](LetEncFbIP6.md)
 
