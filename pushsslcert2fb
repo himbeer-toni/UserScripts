@@ -1,0 +1,148 @@
+#!/bin/bash
+
+# Upload a SSL/TLS cert to FRITZbox
+# Useful for regularly updated certificated like
+# those from "Let's Encrypt" as they expire 
+# within months. Let's Encrypt provides a
+# script named getssl to check and automatically
+# download a re-newed cert. When a new cert is 
+# downloaded for a domain a command can be executed.
+# Mostly these commands just reload the webserver so 
+# it uses the new cert. THIS script here can be used
+# whenever there is s new cert for the domain of your 
+# FRITZ!box, so if you invoke it via the getssl.conf of
+# your domain, your FRITZ!box will get the new cert as 
+# soon as it is available.
+
+##
+# Author: Himbeertoni
+# Email: Toni.Himbeer@fn.de
+# Github: https://www.github.com/himbeer-toni
+# 
+# This script is available for
+# public use under GPL V3 (see
+# https://www.gnu.org/licenses/gpl-3.0.en.html )
+# 
+# ©2025 Himbeertoni
+# 
+##
+
+# Variables, note that if your KEY file needs a 
+# password, you would have to specify it below
+# in cleartext which is a very bad idea. So
+# creating an unprotected key file is the better 
+# idea!
+username="logfetch"
+certname="fbx.kardel.eu"
+certpath="/root/.getssl/${certname}"
+certpass=""
+host=http://fritz.box
+keyyfil=${certname}.key
+chainfil=chain.crt
+certfil=${certname}.crt
+# Login credentials (encrypted
+# password of user above on
+# FRITZ!box - this script will ask for it and
+# store the password if not already stored
+# script fbpwdsave)
+credfil=~pi/.fblogcred.$username
+# contains sth. like this
+# keycc="UmVnbXN0cmllcnVuZ3Nwcm96ZXNzOdfCpysK"
+#
+# IMPORTANT: The method to save and store
+# the credentials are better than cleartext but
+# not absolutely safe, as both secrets needed to
+# retrieve the credentials are stored in files
+# on your system. To make it safer you must store
+# either $rcfil or $credfil on external device
+# that is secured (e. g. by fingerprint).
+# 
+# Parse options
+while [ "${1:0:1}" = "-" ]
+do
+	case $1 in
+		--pass|-p)
+			secset=y
+			;;
+		--user|-u)
+			shift
+			username=$1
+			credfil=~pi/.fblogcred.$username
+			;;
+		*)
+			echo >&2 "illegal option \"$1\""
+			exit 1
+			;;
+	esac
+	shift
+done
+if [ "$1" != "" ]; then
+	echo >&2 "illegal argument(s} \"$@\""
+	exit 2
+fi
+
+# Define variable keycc, create pwdstore if needed
+rcfil=~pi/.fblogsrc
+if [ -e $rcfil ]; then
+	. $rcfil
+else
+ x="XXXXX"     # want to have 75 "X" for mktemp: 5
+ x="$x$x$x$x"  # 20
+ x="$x$x$x"    # 75
+ keycc=$(mktemp -u "$x") # create 75 byte random string
+ echo keycc="'${keycc}'" > $rcfil
+ chmod 600 $rcfil
+fi
+
+if [ ! -e $credfil ] || [ $secset ]; then
+	while [ ${#sec} -lt 1 ]
+	do
+		read -rsp "Password for $username: " sec
+		echo
+	done
+	echo $sec|ccencrypt -K "$keycc" > $credfil
+	chmod 600 $credfil
+	[ $secset ] && exit
+fi
+
+# login to the box and get a valid SID
+challenge=$(wget -q -O - $host/login_sid.lua | sed -e 's/^.*<Challenge>//' -e 's/<\/Challenge>.*$//')
+hash="$(echo -n $challenge-$(ccat -K "$keycc" $credfil) | iconv -f ASCII -t UTF16LE |md5sum|awk '{print $1}')"
+sid=$(wget -q -O - "$host/login_sid.lua?sid=0000000000000000&username=$username&response=$challenge-$hash"| sed -e 's/^.*<SID>//' -e 's/<\/SID>.*$//')
+
+# generate our upload request
+boundary=$(mktemp -u "Boundary-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+# ATTENTION: Lines must be terminated with CRLF (not only LF!)
+postdata=$(awk '{printf "%s\r\n",$0}' <<EOI
+--$boundary
+Content-Disposition: form-data; name="sid"
+
+$sid
+--$boundary
+
+Content-Disposition: form-data; name="BoxCertPassword"
+
+$certpass
+--$boundary
+
+Content-Disposition: form-data; name="BoxCertImportFile"; filename="BoxCert.pem"
+Content-Type: application/octet-stream
+
+$(cat $certpath/$certfil)
+$(cat $certpath/$keyyfil)
+$(cat $certpath/$chainfil)
+--$boundary--
+EOI
+)
+
+exitwith=0
+# upload the certificate to the box
+# if the cert is valid it takes about
+# 40 seconds for the upload to complete!
+wget -q -O - $host/cgi-bin/firmwarecfg --header="Content-type: multipart/form-data boundary=$boundary" --post-data "$postdata" | grep SSL
+if [ $? != 0 ]; then
+  echo "Failed to upload certificate to FRITZ!box"
+  exitwith=1
+fi  
+
+exit $exitwith
