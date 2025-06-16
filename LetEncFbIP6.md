@@ -104,8 +104,8 @@ Was braucht man dazu:
 1. getssl (https://github.com/srvrco/getssl) auf dem Webserver (oder einen anderen _Certbot_).
 2. ein Skript, welches das Zertifikat per SOAP  auf die FritzBOX hochlädt, ich nenne es mal  pushsslcert2fb.
 3. ein Skript welches den DynDNS-Eintrag ändern kann, ich nenne es ddfbset.
-4. ein Skript, welches die externe IPv6 der Fritzbox ermittelt, ich nenne es extip. Es wird von ddfbset verwendet.
-5. ein Skript, welches die IPv6-Adresse des Webservers (auf dem es läuft) ermittelt, ich nenne es ifip6. Es wird von ddfbset verwendet.
+4. ein Skript, welches die externe IPv6 der Fritzbox ermittelt, ich nenne es myip. Es wird von ddfbset verwendet.
+5. ein Skript, welches die IPv6-Adresse des Webservers (auf dem es läuft) ermittelt, ich nenne es fritzip. Es wird von ddfbset verwendet.
 
 Und dann geht man wie folgt vor:
 1. DynDNS auf Webserver IPv6 zeigen lassen.
