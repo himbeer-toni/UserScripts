@@ -24,7 +24,7 @@ Und zwar bei der Erlangung eines _Let's Encrypt_ Zertifikats.
 Das Challenge Verfahren[^2] mit dessen Hilfe man beweist, dass man tatsächlich die Kontrolle über die angefragte Domain hat, erfordert es, dass man (temporär) eine eigens pro Domain für diesen Zweck erzeugte Datei unter einem bestimmten Pfad per HTTP (ohne S) zum Download bereitstellt.
 [^2]: ACME kennt zwei Verfahren zur Bereitstellung der Antwort: HTTP und DNS, wobei üblicherweise meist HTTP verwendet wird. Wenn der Provider die **dynamische** Erstellung/Änderung von **TXT**-Records erlaubt, würde ich dies vorziehen. Nur leider unterstützt mein Provider dies leider nicht.
 
-Dieses automatisierte Verfahren zur Erlangung eines Zertifikats ist übrigens unter der Abkürzung **ACME** (**A**utomatic **C**ertificate **M**anagement **E**nvironment),  außer in der Dokumentation (RFC 8555) auch in Wikipedia beschrieben. Ausser _Let's Encrypt_ verwenden auch andere ACME (z B. ZeroSSL, Google Cloud).
+Dieses automatisierte Verfahren zur Erlangung eines Zertifikats ist übrigens unter der Abkürzung **ACME** (**A**utomatic **C**ertificate **M**anagement **E**nvironment),  außer in der Dokumentation (RFC 8555) auch in Wikipedia beschrieben. Außer _Let's Encrypt_ verwenden auch andere ACME (z B. ZeroSSL, Google Cloud).
 
 ## Wir brauchen also einen Webserver
 Wegen des ACME-Verfahrens, ist also ein Webserver erforderlich, auf den man dynamisch die Challenges (in ein bestimmtes Verzeichnis) kopieren kann. Das muss kein schwergewichtiger Webserver wie Apache oder nginx sein, ein Python-1-4 Zeiler (für IPv6 mindestens Python  3.8) tut es auch. Der Server muss nur in der Lage sein, Dateien unter `http://<DNS-name>/.well-known/acme-challenge/` auszuliefern.
