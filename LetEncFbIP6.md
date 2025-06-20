@@ -21,7 +21,8 @@ aber die Erlangung eines offiziellen, kostenfreien Zertifikats von Let's Encrypt
 ## Zertifikat von _Let's Encrypt_
 Zertifikate von _Let's Encrypt_ verwendet man normalerweise für eigene Webserver mit eigenem DNS-Namen. Betreibt man einen solchen, so betreibt man ihn (hoffentlich) nur mit HTTPS, nicht mit dem unverschlüsselten HTTP. Höchstens um fehlgeleite Nutzer wieder auf den rechten (verschlüsselten) Weg zu bringen (per Redirect zu HTTPS) ist ein HTTP-Zugang sinnvoll. Und dann gibt es da noch einen legitimen Fall, bei dem unverschlüsseltes HTTP vonnöten ist. <br>
 Und zwar bei der Erlangung eines _Let's Encrypt_ Zertifikats.
-Das Challenge-Response Verfahren mit dessen Hilfe man beweist, dass man tatsächlich die Kontrolle über die angefragte Domain hat, erfordert es, dass man (temporär) eine eigens pro Domain für diesen Zweck erzeugte Datei unter einem bestimmten Pfad per HTTP (ohne S) zum Download bereitstellt.
+Das Challenge Verfahren[^2] mit dessen Hilfe man beweist, dass man tatsächlich die Kontrolle über die angefragte Domain hat, erfordert es, dass man (temporär) eine eigens pro Domain für diesen Zweck erzeugte Datei unter einem bestimmten Pfad per HTTP (ohne S) zum Download bereitstellt.
+[^2]: ACME kennt zwei Verfahren zur Bereitstellung der Antwort: HTTP und DNS, wobei üblicherweise meist HTTP verwendet wird. Wenn der Provider die **dynamische** Erstellung/Änderung von **TXT**-Records erlaubt, würde ich dies vorziehen. Nur leider unterstützt mein Provider dies leider nicht.
 
 Dieses automatisierte Verfahren zur Erlangung eines Zertifikats ist übrigens unter der Abkürzung **ACME** (**A**utomatic **C**ertificate **M**anagement **E**nvironment),  außer in der Dokumentation (RFC 8555) auch in Wikipedia beschrieben. Ausser _Let's Encrypt_ verwenden auch andere ACME (z B. ZeroSSL, Google Cloud).
 
