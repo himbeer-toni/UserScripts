@@ -57,7 +57,7 @@ make_cert_filename() {
     fi
   done
   # Remove non-alphanum and limit to 30 chars
-  fname=$(echo "$fname" | tr -cd '[:alnum:]' | cut -c1-30)
+  fname=$(echo "$fname" | tr -cd '[:alnum:]' | cut -c1-40)
   echo "$fname.pem"
 }
 

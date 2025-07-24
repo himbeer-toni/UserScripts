@@ -79,6 +79,10 @@ Usage: crnupdate [option [param]..] inputfile [outputfile]
   -s stay silent if copyright notice is already
      up to date and no files where touched therefor
 ```
+
+## fetch-missing-ca
+Obtain missing SSL certs. See [here](fetch-missing-ca.md).
+
 ## smop (**sm**artphone**op**en)
 
 Very personal helper
