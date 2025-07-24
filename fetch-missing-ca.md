@@ -2,139 +2,115 @@
 
 ## Purpose
 
-`fetch-missing-ca` is a shell script designed to help users identify, extract, and analyze the certificate chain (including any missing CA certificates) from a specified HTTPS endpoint. Its main purpose is to facilitate troubleshooting SSL/TLS connection issues where a server's certificate chain is incomplete or not trusted by your operating system—particularly useful when you encounter "certificate not trusted" or "unable to get local issuer certificate" errors.
+`fetch-missing-ca` is a shell script that helps users analyze and extract the certificate chain (including any missing CA certificates) from a given HTTPS endpoint. It is especially useful for troubleshooting SSL/TLS issues or adding missing CA certificates to your system.
 
 The script:
-- Connects to a given HTTPS endpoint and fetches the full certificate chain.
-- Extracts each certificate in the chain.
+- Connects to an HTTPS URL and fetches the full certificate chain.
+- Extracts each certificate and saves it as a PEM file named after the issuer's CN (Common Name) using a "speaking" algorithm:
+  - The first word is used in full.
+  - Subsequent words longer than 8 characters are truncated to their first 5 characters; shorter words are kept as-is.
+  - All words are concatenated (no spaces), non-alphanumeric characters are removed, and the result is truncated to 40 characters (excluding `.pem`).
+  - If no CN is found, a hash-based name is used.
 - Prints readable details (subject, issuer, type) for each certificate.
 - Optionally generates a Markdown report.
-- Saves the certificates as PEM files for further inspection or installation.
-
-## Function
-
-- Uses `openssl s_client` to query the endpoint and retrieve the certificate chain.
-- Splits the chain into individual certificates.
-- For each certificate, extracts the subject and issuer, and determines if it's a root, intermediate, or leaf (end-entity) certificate.
-- Presents details in a user-friendly format, highlighting the CN (Common Name) field for easy identification.
-- Outputs certificate files for manual installation if needed.
+- Saves the certificates as PEM files for inspection or installation.
 
 ## Example Usage
 
 ```sh
-./fetch-missing-ca https://example.com/
-```
-
-Example output:
-```
-https://example.com/
-  12345678.pem
-   type: Intermediate CA
-   subject: C=US, O=Example CA,
-      CN=Example Intermediate CA
-   issuer: C=US, O=Root CA,
-      CN=Example Root CA
-
-  abcd1234.pem
-   type: End-Entity
-   subject: C=US, O=Example Organization,
-      CN=example.com
-   issuer: C=US, O=Example CA,
-      CN=Example Intermediate CA
+fetch-missing-ca https://dyndns.strato.com/nic/update
+https://dyndns.strato.com/nic/update
+ SectigoPublicServerAutheCAOVR36.pem
+  type: Intermediate CA
+  subject: C=GB, O=Sectigo Limited,
+  subject: CN=Sectigo Public Server Authentication CA OV R36
+  issuer: C=GB, O=Sectigo Limited,
+  issuer: CN=Sectigo Public Server Authentication Root R46
+ Xstratocom.pem
+  type: End-Entity
+  subject: C=DE, ST=Berlin, O=STRATO GmbH,
+  subject: CN=*.strato.com
+  issuer: C=GB, O=Sectigo Limited,
+  issuer: CN=Sectigo Public Server Authentication CA OV R36
 ```
 
 Or, to generate a Markdown report:
 ```sh
 ./fetch-missing-ca -md https://example.com/
 ```
-This will create a report like `Report-example.com.md`.
+This creates `Report-example.com.md` with a table of the certificate chain.
+
+#### Naming Algorithm Example
+
+CN: `Sectigo Public Server Authentication CA OV R36`  
+Filename: `SectigoPublicServerAutheCAOVR36.pem`
 
 ---
 
 ## When (and When Not) to Trust a CA Certificate
 
-**Trust a CA certificate** when:
-- It comes from a reputable, well-known Certificate Authority (e.g., Let's Encrypt, DigiCert, Sectigo).
-- You have verified its fingerprint and issuer using a trusted method.
-- It is distributed by your OS vendor or package manager.
-- The certificate details (subject, issuer, validity, fingerprints) match those published by the CA.
+**Trust a CA certificate only if:**
+- It originates from a reputable, well-known Certificate Authority (CA).
+- You have verified its fingerprint and issuer using trusted methods.
+- It matches documentation or fingerprints published by the CA.
+- It is meant to be used for your organization or system.
 
-**Do NOT trust a CA certificate** when:
-- You received it from an untrusted source (e.g., email, random website).
-- The issuer or subject looks suspicious or is unfamiliar.
-- There is no public documentation or reputation for the CA.
-- The certificate is self-signed and not cross-signed by a trusted CA (unless you control both ends).
-- You cannot independently verify its authenticity via other channels.
+**Do NOT trust a CA certificate if:**
+- The source or issuer is unknown, suspicious, or unverifiable.
+- It is self-signed and not cross-signed by a trusted CA, unless you control both ends.
+- You cannot independently verify its authenticity.
 
-> **Always validate the CA's legitimacy before adding it to your trusted store! Improperly trusting a certificate authority can expose you to man-in-the-middle attacks.**
+> **Improperly trusting a CA certificate can expose you to security risks such as man-in-the-middle attacks. Always verify before trusting!**
 
 ---
 
 ## How to Add a Former Missing CA to Debian Linux
 
-Suppose you've identified a missing intermediate or root CA and want to add it to your system:
+Suppose you've identified a missing CA and want to add it:
 
 ### 1. Copy the Certificate
 
-Copy the PEM file (e.g., `ExampleRootCA.pem`) to the system CA certificates directory:
+Copy the PEM file (e.g., `SectigoPublicServerAutheCAOVR36.pem`) to the system CA certificates directory:
 ```sh
-sudo cp ExampleRootCA.pem /usr/local/share/ca-certificates/
-```
-or (for older Debian versions):
-```sh
-sudo cp ExampleRootCA.pem /usr/share/ca-certificates/extra/
+sudo cp SectigoPublicServerAutheCAOVR36.pem /usr/local/share/ca-certificates/
 ```
 
 ### 2. Update the CA Store
 
-Run the following command to update your system's CA certificates:
+Run:
 ```sh
 sudo update-ca-certificates
 ```
 
-This process will:
+This will:
 - Add the new certificate to `/etc/ssl/certs/ca-certificates.crt`
-- Make it available to all applications using the system CA store.
+- Make it available to applications using the system CA store.
 
 ### 3. Verify Installation
 
-You can verify the certificate is included:
+Check the CA is included:
 ```sh
-grep "CN=Example Root CA" /etc/ssl/certs/ca-certificates.crt
+grep "CN=Sectigo Public Server Authentication CA OV R36" /etc/ssl/certs/ca-certificates.crt
 ```
-Or, use `openssl`:
+Or, verify a server certificate:
 ```sh
-openssl verify -CAfile /etc/ssl/certs/ca-certificates.crt your-server-cert.pem
+openssl verify -CAfile /etc/ssl/certs/ca-certificates.crt server-cert.pem
 ```
 
 ### 4. Remove (if needed)
 
-To remove a CA, delete the PEM file you added and run `sudo update-ca-certificates --fresh`.
+Delete the PEM file and run:
+```sh
+sudo update-ca-certificates --fresh
+```
 
 ---
 
-## Security Warning
+## Security Notice
 
-**Never add a CA certificate to your trusted store unless you are sure it is legitimate and necessary. Improper trust can compromise your security.**
+**Never add a CA certificate to your trusted store unless you are certain it is legitimate and necessary.**
 
 ---
 
-## License and author
+## License
 
-This software was created and designed by
-Himbeertoni.
-Email: Toni.Himbeer@fn.de
-Github: https://www.github.com/himbeer-toni
-
-I made extensive use of GitHub Copilot while developing this project. Copilot proved to be incredibly helpful, saving me significant time and enabled me to implement some more features. It allowed me to easily enhance both the appearance and functionality of the project without requiring extensive manual coding.
-
-This project is licensed under the GNU General Public License v3.0 (GPLv3).
-
-**What does this mean?**  
-- You are free to use, study, modify, and share this software.
-- If you distribute modified versions, you must also provide the source code and keep them under the same GPLv3 license.
-- This ensures that all users have the same freedoms with the software.
-
-For full details, please see the [official GPL v3 license text](https://www.gnu.org/licenses/gpl-3.0.html).
-
-©2025 Himbeertoni
