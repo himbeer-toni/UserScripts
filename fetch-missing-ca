@@ -1,0 +1,104 @@
+#!/bin/bash
+
+set -euo pipefail
+
+if [[ $EUID -eq 0 ]]; then
+  echo "ERROR: This script must NOT be run as root." >&2
+  exit 1
+fi
+
+md=0
+if [[ $# -gt 1 && "$1" == "-md" ]]; then
+  md=1
+  shift
+fi
+
+if [[ $# -ne 1 ]]; then
+  echo "Usage: $0 [-md] https://hostname[:port]/"
+  exit 2
+fi
+
+url="$1"
+hostPort=$(echo "$url" | sed -n 's#https://\([^/]\+\).*#\1#p')
+host=$(echo "$hostPort" | cut -d: -f1)
+port=$(echo "$hostPort" | grep ':' >/dev/null && echo "$hostPort" | cut -d: -f2 || echo 443)
+
+if [[ "$PWD" == "/etc/ssl/certs" ]]; then
+  echo "ERROR: Refusing to write certificates in /etc/ssl/certs."
+  exit 3
+fi
+
+tmpDir=$(mktemp -d)
+trap 'rm -rf "$tmpDir"' EXIT
+
+# Fetch and split the cert chain
+openssl s_client -showcerts -connect "${host}:${port}" -servername "$host" < /dev/null > "$tmpDir/chain.txt" 2>/dev/null
+
+awk '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/{
+    if (/-----BEGIN CERTIFICATE-----/) {i++}
+    print > "'$tmpDir'/cert" i ".pem"
+}' "$tmpDir/chain.txt"
+
+declare -a certInfo
+for file in "$tmpDir"/cert*.pem; do
+  fileName=$(openssl x509 -noout -hash -in "$file").pem
+  cp "$file" "./$fileName"
+
+  # Stable extraction: one openssl call for both subject and issuer
+  subjectRaw=$(openssl x509 -in "$file" -noout -subject | sed -e 's/^subject=//' -e 's/ *= */=/g')
+  issuerRaw=$(openssl x509 -in "$file" -noout -issuer | sed -e 's/^issuer=//' -e 's/ *= */=/g')
+
+  # Classify cert type
+  if [[ "$subjectRaw" == "$issuerRaw" ]]; then
+    certType="Root CA"
+    orderKey="0"
+  elif openssl x509 -in "$file" -noout -text | grep -q "CA:TRUE"; then
+    certType="Intermediate CA"
+    orderKey="1"
+  else
+    certType="End-Entity"
+    orderKey="2"
+  fi
+  certInfo+=( "$orderKey|$fileName|$certType|$subjectRaw|$issuerRaw" )
+done
+
+IFS=$'\n' sorted=($(sort <<<"${certInfo[*]}"))
+unset IFS
+
+if [[ $md -eq 0 ]]; then
+  echo "$url"
+  for line in "${sorted[@]}"; do
+    IFS='|' read -r _ fileName certType subjectRaw issuerRaw <<<"$line"
+    echo " $fileName"
+    echo "  type: $certType"
+    # Print subject, break before CN=, indent CN
+		echo "  subject:"
+    echo "$subjectRaw" | sed -E 's/(, )?(CN=[^,]*)/,\n   \2/g' | while read -r sline; do
+      [[ -n "$sline" ]] && echo "   $sline"
+    done
+    # Print issuer, break before CN=, indent CN
+		echo "  issuer:"
+    echo "$issuerRaw" | sed -E 's/(, )?(CN=[^,]*)/,\n   \2/g' | while read -r iline; do
+      [[ -n "$iline" ]] && echo "   $iline"
+    done
+    echo
+  done
+else
+  fqdn=$(echo "$host" | sed 's/:.*//')
+  mdName="Report-$fqdn.md"
+  {
+    echo "# Certificate Report"
+    echo
+    echo "**URL:** $url"
+    echo
+    echo "| Filename | Type | Subject | Issuer |"
+    echo "|---|---|---|---|"
+    for line in "${sorted[@]}"; do
+      IFS='|' read -r _ fileName certType subjectRaw issuerRaw <<<"$line"
+      mdSubject=$(echo "$subjectRaw" | sed -E 's/(, )?(CN=[^,]*)/,\n   \2/g' | tr '\n' ' ')
+      mdIssuer=$(echo "$issuerRaw" | sed -E 's/(, )?(CN=[^,]*)/,\n   \2/g' | tr '\n' ' ')
+      echo "| $fileName | $certType | $mdSubject | $mdIssuer |"
+    done
+  } > "$mdName"
+  echo "Markdown report written to $mdName"
+fi
