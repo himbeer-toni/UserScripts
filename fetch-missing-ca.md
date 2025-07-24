@@ -1,4 +1,4 @@
-# fetch-missing-ca
+ fetch-missing-ca
 
 ## Purpose
 
@@ -18,18 +18,18 @@ The script:
 ## Example Usage
 
 ```sh
-fetch-missing-ca https://dyndns.strato.com/nic/update
-https://dyndns.strato.com/nic/update
+fetch-missing-ca https://dyndns.whatever.com/nic/update
+https://dyndns.whatever.com/nic/update
  SectigoPublicServerAutheCAOVR36.pem
   type: Intermediate CA
   subject: C=GB, O=Sectigo Limited,
   subject: CN=Sectigo Public Server Authentication CA OV R36
   issuer: C=GB, O=Sectigo Limited,
   issuer: CN=Sectigo Public Server Authentication Root R46
- Xstratocom.pem
+ Xwhatevercom.pem
   type: End-Entity
-  subject: C=DE, ST=Berlin, O=STRATO GmbH,
-  subject: CN=*.strato.com
+  subject: C=DE, ST=Berlin, O=WHATEVER GmbH,
+  subject: CN=*.whatever.com
   issuer: C=GB, O=Sectigo Limited,
   issuer: CN=Sectigo Public Server Authentication CA OV R36
 ```
