@@ -39,12 +39,40 @@ awk '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/{
     print > "'$tmpDir'/cert" i ".pem"
 }' "$tmpDir/chain.txt"
 
+# Function to create a "speaking" filename from the issuer CN
+make_cert_filename() {
+  local cn="$1"
+  # Split into words
+  read -ra words <<<"$cn"
+  if (( ${#words[@]} == 0 )); then
+    echo ""
+    return
+  fi
+  fname="${words[0]}"
+  for word in "${words[@]:1}"; do
+    if (( ${#word} > 8 )); then
+      fname="${fname}$(echo "$word" | cut -c1-5)"
+    else
+      fname="${fname}${word}"
+    fi
+  done
+  # Remove non-alphanum and limit to 30 chars
+  fname=$(echo "$fname" | tr -cd '[:alnum:]' | cut -c1-30)
+  echo "$fname.pem"
+}
+
 declare -a certInfo
 for file in "$tmpDir"/cert*.pem; do
-  fileName=$(openssl x509 -noout -hash -in "$file").pem
+  # Extract issuer CN, fallback to hash if not found
+	issuerCN=$(openssl x509 -in "$file" -noout -subject  | sed -E 's/.*CN *= *//;s/\*/X/g')
+  if [[ -n "$issuerCN" ]]; then
+    fileName=$(make_cert_filename "$issuerCN")
+  fi
+  if [[ -z "$fileName" ]]; then
+    fileName="$(openssl x509 -noout -hash -in "$file").pem"
+  fi
   cp "$file" "./$fileName"
 
-  # Stable extraction: one openssl call for both subject and issuer
   subjectRaw=$(openssl x509 -in "$file" -noout -subject | sed -e 's/^subject=//' -e 's/ *= */=/g')
   issuerRaw=$(openssl x509 -in "$file" -noout -issuer | sed -e 's/^issuer=//' -e 's/ *= */=/g')
 
@@ -71,15 +99,11 @@ if [[ $md -eq 0 ]]; then
     IFS='|' read -r _ fileName certType subjectRaw issuerRaw <<<"$line"
     echo " $fileName"
     echo "  type: $certType"
-    # Print subject, break before CN=, indent CN
-		echo "  subject:"
     echo "$subjectRaw" | sed -E 's/(, )?(CN=[^,]*)/,\n   \2/g' | while read -r sline; do
-      [[ -n "$sline" ]] && echo "   $sline"
+      [[ -n "$sline" ]] && echo "  subject: $sline"
     done
-    # Print issuer, break before CN=, indent CN
-		echo "  issuer:"
     echo "$issuerRaw" | sed -E 's/(, )?(CN=[^,]*)/,\n   \2/g' | while read -r iline; do
-      [[ -n "$iline" ]] && echo "   $iline"
+      [[ -n "$iline" ]] && echo "  issuer: $iline"
     done
     echo
   done
