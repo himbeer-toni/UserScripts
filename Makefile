@@ -1,5 +1,5 @@
 SHELL = /bin/bash
-TARGETS = smop crnupdate
+TARGETS = smop crnupdate fetch-missing-ca
 UTARGETS = 
 
 BINDIR	= ~/bin

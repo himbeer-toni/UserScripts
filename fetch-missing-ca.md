@@ -1,4 +1,10 @@
- fetch-missing-ca
+# fetch-missing-ca
+
+## Sources
+See fetch-missing-ca at [GitHub](https://github.com/himbeer-toni/UserScripts).
+
+## Download the script
+Get it [from GitHub](https://raw.githubusercontent.com/himbeer-toni/UserScripts/refs/heads/main/fetch-missing-ca).
 
 ## Purpose
 
