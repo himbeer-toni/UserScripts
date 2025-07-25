@@ -1,7 +1,7 @@
 # fetch-missing-ca
 
-## Sources
-See fetch-missing-ca at [GitHub](https://github.com/himbeer-toni/UserScripts/blob/main/fetch-missing-ca.md).
+## Sources and Documenation
+See fetch-missing-ca at [GitHub](https://github.com/himbeer-toni/). Here is a link to [this documentation](https://github.com/himbeer-toni/UserScripts/blob/main/fetch-missing-ca.md).
 
 ## Download the script
 Get it [from GitHub](https://raw.githubusercontent.com/himbeer-toni/UserScripts/refs/heads/main/fetch-missing-ca).
