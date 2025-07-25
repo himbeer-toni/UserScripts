@@ -21,6 +21,17 @@ The script:
 - Optionally generates a Markdown report.
 - Saves the certificates as certificate files for inspection or installation.
 
+## Prerequisites
+
+Running debian bookworm this script needs
+- curl
+- openssl
+to work. Just run  
+```
+sudo apt install curl openssl
+```
+before running the script.
+
 ## Example Usage
 
 ```sh
