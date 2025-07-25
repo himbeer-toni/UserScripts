@@ -75,8 +75,8 @@ Copy the PEM file (e.g., `SectigoPublicServerAutheCAOVR36.crt`) to the system CA
 sudo cp SectigoPublicServerAutheCAOVR36.crt /usr/local/share/ca-certificates/
 ```
 ---
->**ATTENTION**:<
->The PEM file **must** have the suffix .crt in /usr/local/share/ca-certificates/, otherwise the next step **will not** add the certificate to /etc/ssl/certs(/ca-certificates.crt)!<
+>**ATTENTION**:<br/>
+>The PEM file **must** have the suffix .crt in /usr/local/share/ca-certificates/, otherwise the next step **will not** add the certificate to /etc/ssl/certs(/ca-certificates.crt)!
 ---
 ### 2. Update the CA Store
 
