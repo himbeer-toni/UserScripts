@@ -6,14 +6,14 @@
 
 The script:
 - Connects to an HTTPS URL and fetches the full certificate chain.
-- Extracts each certificate and saves it as a PEM file named after the issuer's CN (Common Name) using a "speaking" algorithm:
+- Extracts each certificate and saves it as a certificate file named after the issuer's CN (Common Name) using a "speaking" algorithm:
   - The first word is used in full.
   - Subsequent words longer than 8 characters are truncated to their first 5 characters; shorter words are kept as-is.
   - All words are concatenated (no spaces), non-alphanumeric characters are removed, and the result is truncated to 40 characters (excluding `.crt`).
   - If no CN is found, a hash-based name is used.
 - Prints readable details (subject, issuer, type) for each certificate.
 - Optionally generates a Markdown report.
-- Saves the certificates as PEM files for inspection or installation.
+- Saves the certificates as certificate files for inspection or installation.
 
 ## Example Usage
 
@@ -70,13 +70,13 @@ Suppose you've identified a missing CA and want to add it:
 
 ### 1. Copy the Certificate
 
-Copy the PEM file (e.g., `SectigoPublicServerAutheCAOVR36.crt`) to the system CA certificates directory:
+Copy the certificate file (e.g., `SectigoPublicServerAutheCAOVR36.crt`) to the system CA certificates directory:
 ```sh
 sudo cp SectigoPublicServerAutheCAOVR36.crt /usr/local/share/ca-certificates/
 ```
 ---
 >**ATTENTION**:<br/>
->The PEM file **must** have the suffix .crt in /usr/local/share/ca-certificates/, otherwise the next step **will not** add the certificate to /etc/ssl/certs(/ca-certificates.crt)!
+>The certificate file **must** have the suffix .crt in /usr/local/share/ca-certificates/, otherwise the next step **will not** add the certificate to /etc/ssl/certs(/ca-certificates.crt)!
 ---
 ### 2. Update the CA Store
 
@@ -111,7 +111,7 @@ SSL connection to https://whatever.com/ works - exiting
 
 ### 4. Remove (if needed)
 
-Delete the PEM file and run:
+Delete the certificate file and run:
 ```sh
 sudo update-ca-certificates
 ```
