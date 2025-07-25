@@ -93,12 +93,10 @@ This will:
 
 Check the CA is included:
 ```sh
-grep "CN=Sectigo Public Server Authentication CA OV R36" /etc/ssl/certs/ca-certificates.crt
+openssl crl2pkcs7 -nocrl -certfile /etc/ssl/certs/ca-certificates.crt | openssl pkcs7 -print_certs -text -noout | awk '/CN=Sectigo Public Server Authentication CA OV R36,5/{print "is present";found=1;quit};END {if (found!=1) print "is missing"}'
 ```
-Or, verify a server certificate:
-```sh
-openssl verify -CAfile /etc/ssl/certs/ca-certificates.crt server-cert.crt
-```
+which will return 'is missing' or 'is present'
+
 Or, run fetch-missing-ca again
 ```sh
 fetch-missing-ca https://whatever.com/
