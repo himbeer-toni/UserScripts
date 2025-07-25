@@ -9,7 +9,7 @@ The script:
 - Extracts each certificate and saves it as a PEM file named after the issuer's CN (Common Name) using a "speaking" algorithm:
   - The first word is used in full.
   - Subsequent words longer than 8 characters are truncated to their first 5 characters; shorter words are kept as-is.
-  - All words are concatenated (no spaces), non-alphanumeric characters are removed, and the result is truncated to 40 characters (excluding `.pem`).
+  - All words are concatenated (no spaces), non-alphanumeric characters are removed, and the result is truncated to 40 characters (excluding `.crt`).
   - If no CN is found, a hash-based name is used.
 - Prints readable details (subject, issuer, type) for each certificate.
 - Optionally generates a Markdown report.
@@ -20,13 +20,13 @@ The script:
 ```sh
 fetch-missing-ca https://dyndns.whatever.com/nic/update
 https://dyndns.whatever.com/nic/update
- SectigoPublicServerAutheCAOVR36.pem
+ SectigoPublicServerAutheCAOVR36.crt
   type: Intermediate CA
   subject: C=GB, O=Sectigo Limited,
   subject: CN=Sectigo Public Server Authentication CA OV R36
   issuer: C=GB, O=Sectigo Limited,
   issuer: CN=Sectigo Public Server Authentication Root R46
- Xwhatevercom.pem
+ Xwhatevercom.crt
   type: End-Entity
   subject: C=DE, ST=Berlin, O=WHATEVER GmbH,
   subject: CN=*.whatever.com
@@ -43,7 +43,7 @@ This creates `Report-example.com.md` with a table of the certificate chain.
 #### Naming Algorithm Example
 
 CN: `Sectigo Public Server Authentication CA OV R36`  
-Filename: `SectigoPublicServerAutheCAOVR36.pem`
+Filename: `SectigoPublicServerAutheCAOVR36.crt`
 
 ---
 
@@ -70,10 +70,12 @@ Suppose you've identified a missing CA and want to add it:
 
 ### 1. Copy the Certificate
 
-Copy the PEM file (e.g., `SectigoPublicServerAutheCAOVR36.pem`) to the system CA certificates directory:
+Copy the PEM file (e.g., `SectigoPublicServerAutheCAOVR36.crt`) to the system CA certificates directory:
 ```sh
-sudo cp SectigoPublicServerAutheCAOVR36.pem /usr/local/share/ca-certificates/
+sudo cp SectigoPublicServerAutheCAOVR36.crt /usr/local/share/ca-certificates/
 ```
+**ATTENTION**:
+The PEM file **must** have the suffix .crt in /usr/local/share/ca-certificates/, otherwise the next step **will not** add the certificate to /etc/ssl/certs(/ca-certificates.crt)!
 
 ### 2. Update the CA Store
 
@@ -94,7 +96,7 @@ grep "CN=Sectigo Public Server Authentication CA OV R36" /etc/ssl/certs/ca-certi
 ```
 Or, verify a server certificate:
 ```sh
-openssl verify -CAfile /etc/ssl/certs/ca-certificates.crt server-cert.pem
+openssl verify -CAfile /etc/ssl/certs/ca-certificates.crt server-cert.crt
 ```
 
 ### 4. Remove (if needed)
