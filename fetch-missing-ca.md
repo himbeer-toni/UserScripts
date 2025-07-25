@@ -113,7 +113,7 @@ SSL connection to https://whatever.com/ works - exiting
 
 Delete the PEM file and run:
 ```sh
-sudo update-ca-certificates --fresh
+sudo update-ca-certificates
 ```
 
 ---
