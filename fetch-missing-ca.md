@@ -131,7 +131,7 @@ Himbeertoni.
 Email: Toni.Himbeer@fn.de
 Github: https://www.github.com/himbeer-toni
 
-I made extensive use of GitHub Copilot while developing this project. Copilot proved to be incredibly helpful, saving me significant time and enabling me to implement far more features than I could have on my own. It allowed me to easily enhance both the appearance and functionality of the project without requiring extensive manual coding.
+I made extensive use of GitHub Copilot while developing this script. Copilot proved to be incredibly helpful—occasionally a bit slow-witted, but it saved me a significant amount of time and often suggested interesting ideas. It consistently selected the right openssl commands and parameters from what feels like an overwhelming number of possibilities—something I rarely managed to do myself. Copilot also handled most of the documentation.
 
 This project is licensed under the GNU General Public License v3.0 (GPLv3).
 
