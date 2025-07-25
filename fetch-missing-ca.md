@@ -23,10 +23,10 @@ The script:
 
 ## Prerequisites
 
-Running debian bookworm this script needs
-- curl
-- openssl
-to work. Just run  
+Running on debian bookworm (or Ubuntu) this script needs
+- curl0
+- openssl<br/>
+to work. Just run<br/>
 ```
 sudo apt install curl openssl
 ```
