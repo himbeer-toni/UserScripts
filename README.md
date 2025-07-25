@@ -1,6 +1,6 @@
 # Document
-German description how to obtain a Let's Encrypt
-certificate: 
+German description how to automatically obtain a Let's Encrypt
+certificate for a Fritz!BOX running IPv6: 
 [LetEncFbIP6.md](LetEncFbIP6.md)
 
 # UserScripts
