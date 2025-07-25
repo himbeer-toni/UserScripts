@@ -105,7 +105,7 @@ fetch-missing-ca https://whatever.com/
 ```
 which will either tell you that it works or tell
 you the still missing certificates as before.
-```
+```noCopy
 SSL connection to https://whatever.com/ works - exiting
 ```
 
