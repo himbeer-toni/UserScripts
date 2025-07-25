@@ -24,8 +24,9 @@ The script:
 ## Prerequisites
 
 Running on debian bookworm (or Ubuntu) this script needs
-- curl0
-- openssl<br/>
+- curl
+- openssl
+
 to work. Just run<br/>
 ```
 sudo apt install curl openssl
