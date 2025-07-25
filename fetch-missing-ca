@@ -1,11 +1,40 @@
 #!/bin/bash
 
-set -euo pipefail
-
 if [[ $EUID -eq 0 ]]; then
   echo "ERROR: This script must NOT be run as root." >&2
   exit 1
 fi
+
+# Function to test whether there are or are not
+# cert problems
+function checkAnswer() {
+	# What's this?
+	#  Try to fetch the page (no progress-meter but
+	#  show errors -sS), then check the output and
+	#  replace successful HTTPS connection with OK
+	#  or SSL cert prob with KO (-n supresses print
+	#  all lines, the @p makes the match print the
+	#  current line which was replaced with OK or KO)
+	response=$(curl -sSIi $1 2<&1| sed -nE 's@.*SSL certificate problem:.*@KO@p;s@^HTTP/.*@OK@p')
+	case "$response" in
+	#  In the end, we return
+	#   0 if we got an HTTPS-response
+	#   1 if we got an SSL-error
+	#   2 if we got neither
+	#   3 if some programmer breaks the "case" logic
+		OK)
+			return 0
+			;;
+		KO)
+			return 1
+			;;
+		*)
+			return 2
+			;;
+	esac
+	# should never get this far, but if ....
+	return 3
+}
 
 md=0
 if [[ $# -gt 1 && "$1" == "-md" ]]; then
@@ -28,19 +57,27 @@ if [[ "$PWD" == "/etc/ssl/certs" ]]; then
   exit 3
 fi
 
+# If SSL already works, then we're done
+checkAnswer $url
+if [ $? == 0 ]; then
+	echo "SSL connection to $url works - exiting"
+	exit 0
+fi
+
+set -euo pipefail
+
 tmpDir=$(mktemp -d)
 trap 'rm -rf "$tmpDir"' EXIT
 
 # Fetch and split the cert chain
 openssl s_client -showcerts -connect "${host}:${port}" -servername "$host" < /dev/null > "$tmpDir/chain.txt" 2>/dev/null
-
 awk '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/{
     if (/-----BEGIN CERTIFICATE-----/) {i++}
-    print > "'$tmpDir'/cert" i ".pem"
+    print > "'$tmpDir'/cert" i ".crt"
 }' "$tmpDir/chain.txt"
 
 # Function to create a "speaking" filename from the issuer CN
-make_cert_filename() {
+makeCertFilename() {
   local cn="$1"
   # Split into words
   read -ra words <<<"$cn"
@@ -58,18 +95,18 @@ make_cert_filename() {
   done
   # Remove non-alphanum and limit to 30 chars
   fname=$(echo "$fname" | tr -cd '[:alnum:]' | cut -c1-40)
-  echo "$fname.pem"
+  echo "$fname.crt"
 }
 
 declare -a certInfo
-for file in "$tmpDir"/cert*.pem; do
+for file in "$tmpDir"/cert*.crt; do
   # Extract issuer CN, fallback to hash if not found
 	issuerCN=$(openssl x509 -in "$file" -noout -subject  | sed -E 's/.*CN *= *//;s/\*/X/g')
   if [[ -n "$issuerCN" ]]; then
-    fileName=$(make_cert_filename "$issuerCN")
+    fileName=$(makeCertFilename "$issuerCN")
   fi
   if [[ -z "$fileName" ]]; then
-    fileName="$(openssl x509 -noout -hash -in "$file").pem"
+    fileName="$(openssl x509 -noout -hash -in "$file").crt"
   fi
   cp "$file" "./$fileName"
 
