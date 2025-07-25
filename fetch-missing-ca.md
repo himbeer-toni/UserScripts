@@ -99,6 +99,12 @@ Or, verify a server certificate:
 ```sh
 openssl verify -CAfile /etc/ssl/certs/ca-certificates.crt server-cert.crt
 ```
+Or, run fetch-missing-ca again
+```sh
+fetch-missing-ca https://whatever.com/
+```
+which will either tell you that it works or tell
+you the still.p missing certificates.
 
 ### 4. Remove (if needed)
 
