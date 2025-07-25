@@ -102,8 +102,9 @@ Or, run fetch-missing-ca again
 ```sh
 fetch-missing-ca https://whatever.com/
 ```
-which will either tell you that it works or tell
-you the still missing certificates as before:<br/>
+which will either tell you the still missing 
+certificates (as before) or tell you that it 
+works:<br/>
 `
 SSL connection to https://whatever.com/ works - exiting
 `
