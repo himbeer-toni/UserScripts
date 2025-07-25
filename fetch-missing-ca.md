@@ -104,7 +104,8 @@ Or, run fetch-missing-ca again
 fetch-missing-ca https://whatever.com/
 ```
 which will either tell you that it works or tell
-you the still.p missing certificates.
+you the still missing certificates as before.
+'SSL connection to https://whatever.com/ works - exiting'
 
 ### 4. Remove (if needed)
 
