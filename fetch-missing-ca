@@ -3,7 +3,7 @@
 # Author: Himbeertoni
 # Email: Toni.Himbeer@fn.de
 # Github: https://www.github.com/himbeer-toni
-  Version=0.99-048
+  Version=0.99-049
 # 
 # This script is available for
 # public use under GPL V3 (see
@@ -40,7 +40,7 @@ if [[ "$PWD" == "/etc/ssl/certs" ]]; then
 fi
 
 # If SSL already works, then we're done
-curl -sSIi $1 2>&1 >/dev/null
+curl -sSIi $url 2>&1 >/dev/null
 if [ $? == 0 ]; then
 	echo "SSL connection to $url works - exiting"
 	exit 0
