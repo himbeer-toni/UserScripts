@@ -18,37 +18,6 @@ if [[ $EUID -eq 0 ]]; then
   exit 1
 fi
 
-# Function to test whether there are or are not
-# cert problems
-function checkAnswer() {
-	# What's this?
-	#  Try to fetch the page (no progress-meter but
-	#  show errors -sS), then check the output and
-	#  replace successful HTTPS connection with OK
-	#  or SSL cert prob with KO (-n supresses print
-	#  all lines, the @p makes the match print the
-	#  current line which was replaced with OK or KO)
-	response=$(curl -sSIi $1 2<&1| sed -nE 's@.*SSL certificate problem:.*@KO@p;s@^HTTP/.*@OK@p')
-	case "$response" in
-	#  In the end, we return
-	#   0 if we got an HTTPS-response
-	#   1 if we got an SSL-error
-	#   2 if we got neither
-	#   3 if some programmer breaks the "case" logic
-		OK)
-			return 0
-			;;
-		KO)
-			return 1
-			;;
-		*)
-			return 2
-			;;
-	esac
-	# should never get this far, but if ....
-	return 3
-}
-
 md=0
 if [[ $# -gt 1 && "$1" == "-md" ]]; then
   md=1
@@ -71,7 +40,7 @@ if [[ "$PWD" == "/etc/ssl/certs" ]]; then
 fi
 
 # If SSL already works, then we're done
-checkAnswer $url
+curl -sSIi $1 2>&1 >/dev/null
 if [ $? == 0 ]; then
 	echo "SSL connection to $url works - exiting"
 	exit 0
